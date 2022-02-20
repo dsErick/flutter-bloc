@@ -1,3 +1,5 @@
+part of 'search_cep_bloc.dart';
+
 abstract class SearchCepState {}
 
 class SearchCepEmpty implements SearchCepState {

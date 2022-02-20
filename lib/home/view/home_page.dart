@@ -1,5 +1,4 @@
-import 'package:aulao_bloc/home/search_cep_bloc.dart';
-import 'package:aulao_bloc/home/search_cep_state.dart';
+import 'package:aulao_bloc/home/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:aulao_bloc/home/search_cep_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+
+part 'search_cep_state.dart';
 
 class SearchCepBloc extends Bloc<String, SearchCepState> {
   final http.Client httpClient;
