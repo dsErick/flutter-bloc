@@ -4,19 +4,27 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 
+import 'package:aulao_bloc/home/search_cep_state.dart';
+
 class SearchCepBloc {
+  SearchCepBloc([http.Client? client]) {
+    _client = client ?? http.Client();
+  }
+
+  late http.Client _client;
+
+
   final _streamController = StreamController<String>.broadcast();
 
-  Sink<String> get searchCep => _streamController.sink;
-  // Stream<Map<String, dynamic>> get viaCep => _streamController.stream.asyncMap(_searchCep);
-  Stream<SearchCepState> get viaCep => _streamController.stream.switchMap(_searchCep);
+  Sink<String> get sink => _streamController.sink;
+  Stream<SearchCepState> get stream => _streamController.stream.switchMap(_searchCep);
 
 
   Stream<SearchCepState> _searchCep(cep) async* {
     yield const SearchCepLoading();
 
     try {
-      final response = await http.get(Uri.parse('https://viacep.com.br/ws/$cep/json'));
+      final response = await _client.get(Uri.parse('https://viacep.com.br/ws/$cep/json'));
 
       if (response.statusCode != 200) {
         throw const FormatException('Informe um CEP válido.');
@@ -29,7 +37,6 @@ class SearchCepBloc {
       }
 
       yield SearchCepSuccess(data);
-
     } on FormatException catch (e) {
       yield SearchCepError(e.message);
     } catch (e) {
@@ -40,23 +47,4 @@ class SearchCepBloc {
   void dispose() {
     _streamController.close();
   }
-}
-
-
-// Possibilidade de fazer inversão de controle, e assim alterar para vários estados
-// Contrato responsável pelo estado global
-abstract class SearchCepState {}
-
-class SearchCepSuccess implements SearchCepState {
-  final Map<String, dynamic> data;
-
-  const SearchCepSuccess(this.data);
-}
-class SearchCepLoading implements SearchCepState {
-  const SearchCepLoading();
-}
-class SearchCepError implements SearchCepState {
-  final String message;
-
-  const SearchCepError(this.message);
 }
