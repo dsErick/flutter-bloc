@@ -1,30 +1,21 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-import 'package:rxdart/rxdart.dart';
-
 import 'package:aulao_bloc/home/search_cep_state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 
-class SearchCepBloc {
-  SearchCepBloc([http.Client? client]) {
-    _client = client ?? http.Client();
+class SearchCepBloc extends Bloc<String, SearchCepState> {
+  final http.Client httpClient;
+
+  SearchCepBloc({ required this.httpClient }) : super (const SearchCepEmpty()) {
+    on<String>(_searchCep);
   }
 
-  late http.Client _client;
-
-
-  final _streamController = StreamController<String>.broadcast();
-
-  Sink<String> get sink => _streamController.sink;
-  Stream<SearchCepState> get stream => _streamController.stream.switchMap(_searchCep);
-
-
-  Stream<SearchCepState> _searchCep(cep) async* {
-    yield const SearchCepLoading();
+  Future<void> _searchCep(String cep, Emitter<SearchCepState> emit) async {
+    emit(const SearchCepLoading());
 
     try {
-      final response = await _client.get(Uri.parse('https://viacep.com.br/ws/$cep/json'));
+      final response = await httpClient.get(Uri.parse('https://viacep.com.br/ws/$cep/json'));
 
       if (response.statusCode != 200) {
         throw const FormatException('Informe um CEP válido.');
@@ -36,15 +27,11 @@ class SearchCepBloc {
         throw const FormatException('O CEP informado não foi encontrado.');
       }
 
-      yield SearchCepSuccess(data);
+      emit(SearchCepSuccess(data));
     } on FormatException catch (e) {
-      yield SearchCepError(e.message);
+      emit(SearchCepError(e.message));
     } catch (e) {
-      yield SearchCepError(e.toString());
+      emit(SearchCepError(e.toString()));
     }
-  }
-
-  void dispose() {
-    _streamController.close();
   }
 }

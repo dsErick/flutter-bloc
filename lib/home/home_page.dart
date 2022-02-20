@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-
 import 'package:aulao_bloc/home/search_cep_bloc.dart';
 import 'package:aulao_bloc/home/search_cep_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({ Key? key }) : super(key: key);
@@ -11,13 +11,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _searchCepBloc = SearchCepBloc();
   final _cepController = TextEditingController();
 
   @override
   void dispose() {
     _cepController.dispose();
-    _searchCepBloc.dispose();
     super.dispose();
   }
 
@@ -34,7 +32,7 @@ class _HomePageState extends State<HomePage> {
             TextField(
               controller: _cepController,
               keyboardType: TextInputType.number,
-              onSubmitted: (cep) => _searchCepBloc.sink.add(cep),
+              onSubmitted: (cep) => context.read<SearchCepBloc>().add(cep),
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 label: Text('CEP'),
@@ -43,27 +41,22 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: () => _searchCepBloc.sink.add(_cepController.text),
+              onPressed: () => context.read<SearchCepBloc>().add(_cepController.text),
               child: const Text('Pesquisar'),
             ),
             const SizedBox(height: 24),
 
-            StreamBuilder(
-              stream: _searchCepBloc.stream,
-              builder: viaCepBuilder,
-            ),
+            BlocBuilder<SearchCepBloc, SearchCepState>(builder: viaCepBuilder),
           ],
         ),
       ),
     );
   }
 
-  Widget viaCepBuilder(BuildContext context, AsyncSnapshot<SearchCepState> snapshot) {
-    if (!snapshot.hasData) {
+  Widget viaCepBuilder(BuildContext context, SearchCepState state) {
+    if (state is SearchCepEmpty) {
       return Container();
     }
-
-    final SearchCepState state = snapshot.data!;
 
     if (state is SearchCepError) {
       return Text(state.message, style: TextStyle(fontSize: 16, color: Colors.red[700]));
