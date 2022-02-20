@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+
+import 'package:aulao_bloc/home/search_cep_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({ Key? key }) : super(key: key);
@@ -11,10 +10,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final cepController = TextEditingController();
-  Map<String, dynamic> viaCep = {};
-  String error = '';
-  bool isLoading = false;
+  final _searchCepBloc = SearchCepBloc();
+  final _cepController = TextEditingController();
+
+  @override
+  void dispose() {
+    _cepController.dispose();
+    _searchCepBloc.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +31,9 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: <Widget>[
             TextField(
-              controller: cepController,
+              controller: _cepController,
               keyboardType: TextInputType.number,
-              onSubmitted: (cep) => _searchCep(cep),
+              onSubmitted: (cep) => _searchCepBloc.searchCep.add(cep),
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 label: Text('CEP'),
@@ -38,28 +42,14 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: () => _searchCep(cepController.text),
+              onPressed: () => _searchCepBloc.searchCep.add(_cepController.text),
               child: const Text('Pesquisar'),
             ),
             const SizedBox(height: 16),
 
-            if (viaCep.isNotEmpty) Text.rich(
-              TextSpan(
-                style: Theme.of(context).textTheme.headline6,
-                children: <InlineSpan>[
-                  TextSpan(text: [null, ''].contains(viaCep['logradouro']) ? '' : "${viaCep['logradouro']}, "),
-                  TextSpan(text: "${viaCep['localidade']}, ${viaCep['uf']}."),
-                ],
-              ),
-            ),
-
-            if (isLoading) const CircularProgressIndicator(),
-            if (error.isNotEmpty) Text(
-              error,
-              style: TextStyle(
-                color: Colors.red[700],
-                fontSize: 18,
-              ),
+            StreamBuilder(
+              stream: _searchCepBloc.viaCep,
+              builder: viaCepBuilder,
             ),
           ],
         ),
@@ -67,33 +57,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _searchCep(cep) async {
-    setState(() {
-      viaCep = {};
-      error = '';
-      isLoading = true;
-    });
-
-    final response = await http.get(Uri.parse('https://viacep.com.br/ws/$cep/json'));
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (data['erro'] == true) {
-        error = 'O CEP informado não foi encontrado.';
-      } else {
-        viaCep = data;
-      }
-    } else {
-      error = 'Informe um CEP válido.';
+  Widget viaCepBuilder(BuildContext context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
+    if (snapshot.hasError) {
+      return Text(
+        '${snapshot.error}',
+        style: TextStyle(fontSize: 16, color: Colors.red[700]),
+      );
     }
 
-    setState(() => isLoading = false);
-  }
+    if (!snapshot.hasData) {
+      return Container();
+    }
 
-  @override
-  void dispose() {
-    cepController.dispose();
-    super.dispose();
+    // if (snapshot.connectionState == ConnectionState.waiting) {
+    //   return const CircularProgressIndicator();
+    // }
+
+    final viaCep = snapshot.data!;
+
+    return Text.rich(
+      TextSpan(
+        style: Theme.of(context).textTheme.headline6,
+        children: <InlineSpan>[
+          TextSpan(text: [null, ''].contains(viaCep['logradouro']) ? '' : "${viaCep['logradouro']}, "),
+          TextSpan(text: "${viaCep['localidade']}, ${viaCep['uf']}."),
+        ],
+      ),
+    );
   }
 }
