@@ -57,23 +57,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget viaCepBuilder(BuildContext context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-    if (snapshot.hasError) {
-      return Text(
-        '${snapshot.error}',
-        style: TextStyle(fontSize: 16, color: Colors.red[700]),
-      );
-    }
-
+  Widget viaCepBuilder(BuildContext context, AsyncSnapshot<SearchCepState> snapshot) {
     if (!snapshot.hasData) {
       return Container();
     }
 
-    // if (snapshot.connectionState == ConnectionState.waiting) {
-    //   return const CircularProgressIndicator();
-    // }
+    final SearchCepState state = snapshot.data!;
 
-    final viaCep = snapshot.data!;
+    if (state is SearchCepError) {
+      return Text(
+        state.message,
+        style: TextStyle(fontSize: 16, color: Colors.red[700]),
+      );
+    }
+
+    if (state is SearchCepLoading) {
+      return const CircularProgressIndicator();
+    }
+
+
+    final viaCep = (state as SearchCepSuccess).data;
 
     return Text.rich(
       TextSpan(
